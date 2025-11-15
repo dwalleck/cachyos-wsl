@@ -111,15 +111,19 @@ if [ -d "$ROOTFS/usr/lib/systemd/system" ]; then
     # Create systemd mask directory if it doesn't exist
     mkdir -p "$ROOTFS/etc/systemd/system"
 
-    # Services that conflict with WSL
+    # Services that conflict with WSL (based on okrc/CachyOS-WSL configuration)
     # Always mask these, even if not currently installed, to prevent issues
     # if they are installed later
+    # Reference: https://gitee.com/okrc/CachyOS-WSL/blob/main/scripts/rootfs-gen.sh
     SERVICES_TO_MASK=(
         "systemd-resolved.service"
         "systemd-networkd.service"
-        "systemd-networkd.socket"
         "NetworkManager.service"
-        "systemd-timesyncd.service"
+        "getty.target"
+        "systemd-homed.service"
+        "systemd-userdbd.service"
+        "systemd-firstboot.service"
+        "systemd-nsresourced.service"
         "tmp.mount"
     )
 
