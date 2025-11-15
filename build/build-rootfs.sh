@@ -189,6 +189,19 @@ echo "==> Running WSL cleanup..."
 "$CLEANUP_SCRIPT" "$ROOTFS_DIR"
 
 ##############################################################################
+# Validate rootfs
+##############################################################################
+
+echo "==> Validating rootfs..."
+
+VALIDATE_SCRIPT="$SCRIPT_DIR/validate.sh"
+if [ -f "$VALIDATE_SCRIPT" ]; then
+    "$VALIDATE_SCRIPT" "$ROOTFS_DIR"
+else
+    echo "  - Warning: Validation script not found, skipping validation"
+fi
+
+##############################################################################
 # Create tar archive
 ##############################################################################
 
