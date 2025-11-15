@@ -112,6 +112,8 @@ if [ -d "$ROOTFS/usr/lib/systemd/system" ]; then
     mkdir -p "$ROOTFS/etc/systemd/system"
 
     # Services that conflict with WSL
+    # Always mask these, even if not currently installed, to prevent issues
+    # if they are installed later
     SERVICES_TO_MASK=(
         "systemd-resolved.service"
         "systemd-networkd.service"
@@ -123,10 +125,8 @@ if [ -d "$ROOTFS/usr/lib/systemd/system" ]; then
 
     # Mask each service by symlinking to /dev/null
     for service in "${SERVICES_TO_MASK[@]}"; do
-        if [ -f "$ROOTFS/usr/lib/systemd/system/$service" ]; then
-            echo "  - Masking $service"
-            ln -sf /dev/null "$ROOTFS/etc/systemd/system/$service"
-        fi
+        echo "  - Masking $service"
+        ln -sf /dev/null "$ROOTFS/etc/systemd/system/$service"
     done
 
     # Mask systemd-tmpfiles services and timers

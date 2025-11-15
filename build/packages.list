@@ -33,6 +33,10 @@ iptables-nft
 nano
 vim
 
+# Utilities
+# jq: JSON processing (for config validation)
+jq
+
 # Development Tools (optional but useful)
 # Uncomment if you want basic development tools in the base image
 # base-devel

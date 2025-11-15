@@ -192,6 +192,20 @@ mkdir -p "$ROOTFS_DIR/etc/systemd/system"
 ln -sf /usr/lib/systemd/system/multi-user.target "$ROOTFS_DIR/etc/systemd/system/default.target"
 
 ##############################################################################
+# Configure pacman
+##############################################################################
+
+echo "==> Configuring pacman..."
+
+# Enable Color output in pacman for better user experience
+if [ -f "$ROOTFS_DIR/etc/pacman.conf" ]; then
+    echo "  - Enabling Color in pacman.conf"
+    sed -i 's/^#Color$/Color/' "$ROOTFS_DIR/etc/pacman.conf"
+else
+    echo "  - Warning: /etc/pacman.conf not found, skipping Color configuration"
+fi
+
+##############################################################################
 # Run WSL cleanup
 ##############################################################################
 
