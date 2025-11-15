@@ -1,0 +1,170 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0, v2.1.3, etc.
+
+permissions:
+  contents: write  # Required to create releases and upload assets
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build rootfs
+        run: |
+          echo "==> Building CachyOS WSL rootfs..."
+          make rootfs
+
+      - name: Extract and validate rootfs
+        run: |
+          echo "==> Extracting rootfs for validation..."
+          mkdir -p /tmp/rootfs-check
+          cd /tmp/rootfs-check
+          tar -xzf $GITHUB_WORKSPACE/dist/cachyos-v3-rootfs.tar.gz
+
+          echo "==> Running validation checks..."
+          ERRORS=0
+
+          # File existence checks
+          check_file() {
+            if [ ! -f "$1" ]; then
+              echo "❌ FAIL: Missing file: $1"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ PASS: File exists: $1"
+            fi
+          }
+
+          check_file "/tmp/rootfs-check/etc/wsl.conf"
+          check_file "/tmp/rootfs-check/etc/wsl-distribution.conf"
+          check_file "/tmp/rootfs-check/usr/lib/wsl/oobe.sh"
+          check_file "/tmp/rootfs-check/usr/lib/wsl/terminal-profile.json"
+          check_file "/tmp/rootfs-check/usr/lib/wsl/cachyos.ico"
+
+          # Verify OOBE script is executable
+          if [ ! -x "/tmp/rootfs-check/usr/lib/wsl/oobe.sh" ]; then
+            echo "❌ FAIL: OOBE script not executable"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "✅ PASS: OOBE script is executable"
+          fi
+
+          # Verify systemd is enabled
+          if grep -q 'systemd = true' "/tmp/rootfs-check/etc/wsl.conf"; then
+            echo "✅ PASS: systemd is enabled"
+          else
+            echo "❌ FAIL: systemd not enabled"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # Verify prohibited files don't exist
+          if [ -f "/tmp/rootfs-check/etc/resolv.conf" ]; then
+            echo "❌ FAIL: resolv.conf should not exist in rootfs"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "✅ PASS: No resolv.conf in rootfs"
+          fi
+
+          # Validate terminal-profile.json is valid JSON
+          if jq empty "/tmp/rootfs-check/usr/lib/wsl/terminal-profile.json" 2>/dev/null; then
+            echo "✅ PASS: terminal-profile.json is valid JSON"
+          else
+            echo "❌ FAIL: terminal-profile.json is invalid"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # Check archive size (should be reasonable, under 1GB)
+          tar_size=$(stat -c '%s' "$GITHUB_WORKSPACE/dist/cachyos-v3-rootfs.tar.gz")
+          if [ "$tar_size" -lt 1073741824 ]; then
+            echo "✅ PASS: Archive size is reasonable ($(numfmt --to=iec $tar_size))"
+          else
+            echo "❌ FAIL: Archive too large ($(numfmt --to=iec $tar_size))"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          if [ $ERRORS -eq 0 ]; then
+            echo "✅ All validation checks passed!"
+            exit 0
+          else
+            echo "❌ $ERRORS validation check(s) failed"
+            exit 1
+          fi
+
+      - name: Create .wsl file
+        run: |
+          echo "==> Creating .wsl file..."
+          cp dist/cachyos-v3-rootfs.tar.gz dist/cachyos-v3.wsl
+          ls -lh dist/
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## CachyOS for WSL
+
+          A custom Windows Subsystem for Linux (WSL) distribution based on CachyOS, an optimized Arch Linux distribution.
+
+          ### Installation
+
+          1. Download `cachyos-v3.wsl` from the assets below
+          2. Open PowerShell and run:
+             ```powershell
+             wsl --install --from-file path\to\cachyos-v3.wsl
+             ```
+          3. Follow the OOBE prompts to create your user account
+          4. Start using CachyOS WSL!
+
+          ### Requirements
+
+          - **Windows 10/11** with WSL 2 support
+          - **WSL 2.4.4 or later** (check with `wsl --version`)
+          - **Administrator privileges** (for installation)
+
+          ### Features
+
+          - 🚀 **CachyOS Base** - Built on CachyOS with optimized packages and performance tweaks
+          - 🎨 **Custom Branding** - CachyOS icon, Windows Terminal color scheme with signature teal/cyan accents
+          - ⚙️ **systemd Support** - Modern init system with properly configured services for WSL
+          - 🔒 **Secure Setup** - OOBE (Out-of-Box Experience) creates user with sudo access
+          - 📦 **Pacman Package Manager** - Access to Arch Linux and CachyOS repositories
+          - 🔄 **Windows Integration** - Seamless interoperability with Windows
+
+          ### Build Information
+
+          - **Tag**: ${{ github.ref_name }}
+          - **Commit**: ${{ github.sha }}
+          - **Built**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          For more information, see the [README](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/README.md).
+          EOF
+
+          echo "release_notes_file=release_notes.md" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ steps.release_notes.outputs.release_notes_file }}
+          files: |
+            dist/cachyos-v3.wsl
+            dist/cachyos-v3-rootfs.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release created successfully
+        run: |
+          echo "✅ Release ${{ github.ref_name }} created successfully!"
+          echo "📦 Assets uploaded:"
+          echo "  - cachyos-v3.wsl (installable distribution)"
+          echo "  - cachyos-v3-rootfs.tar.gz (source archive)"

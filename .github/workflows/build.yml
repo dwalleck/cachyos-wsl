@@ -1,0 +1,234 @@
+name: Build and Validate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build rootfs
+        run: |
+          echo "==> Building CachyOS WSL rootfs (x86-64-v3)..."
+          make rootfs
+
+      - name: Extract rootfs for validation
+        run: |
+          echo "==> Extracting rootfs to temporary directory..."
+          mkdir -p /tmp/rootfs-check
+          cd /tmp/rootfs-check
+          tar -xzf $GITHUB_WORKSPACE/dist/cachyos-v3-rootfs.tar.gz
+          echo "✅ Rootfs extracted successfully"
+
+      - name: Run static validation checks
+        run: |
+          echo "==> Running static validation checks..."
+          cd /tmp/rootfs-check
+          ERRORS=0
+
+          # Helper function for file checks
+          check_file_exists() {
+            if [ ! -f "$1" ]; then
+              echo "❌ FAIL: Missing file: $1"
+              ERRORS=$((ERRORS + 1))
+              return 1
+            else
+              echo "✅ PASS: File exists: $1"
+              return 0
+            fi
+          }
+
+          check_file_executable() {
+            if [ ! -x "$1" ]; then
+              echo "❌ FAIL: File not executable: $1"
+              ERRORS=$((ERRORS + 1))
+              return 1
+            else
+              echo "✅ PASS: File is executable: $1"
+              return 0
+            fi
+          }
+
+          check_file_not_exists() {
+            if [ -f "$1" ]; then
+              echo "❌ FAIL: File should not exist: $1"
+              ERRORS=$((ERRORS + 1))
+              return 1
+            else
+              echo "✅ PASS: File correctly absent: $1"
+              return 0
+            fi
+          }
+
+          echo ""
+          echo "## File Existence Checks"
+          check_file_exists "/tmp/rootfs-check/etc/wsl.conf"
+          check_file_exists "/tmp/rootfs-check/etc/wsl-distribution.conf"
+          check_file_exists "/tmp/rootfs-check/usr/lib/wsl/oobe.sh"
+          check_file_exists "/tmp/rootfs-check/usr/lib/wsl/terminal-profile.json"
+          check_file_exists "/tmp/rootfs-check/usr/lib/wsl/cachyos.ico"
+          check_file_exists "/tmp/rootfs-check/etc/passwd"
+          check_file_exists "/tmp/rootfs-check/etc/shadow"
+          check_file_exists "/tmp/rootfs-check/etc/pacman.conf"
+
+          echo ""
+          echo "## File Permission Checks"
+          check_file_executable "/tmp/rootfs-check/usr/lib/wsl/oobe.sh"
+
+          # Check wsl.conf permissions
+          wsl_conf_perms=$(stat -c '%a' "/tmp/rootfs-check/etc/wsl.conf")
+          if [ "$wsl_conf_perms" = "644" ]; then
+            echo "✅ PASS: wsl.conf has correct permissions (644)"
+          else
+            echo "❌ FAIL: wsl.conf has incorrect permissions ($wsl_conf_perms, expected 644)"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          echo ""
+          echo "## Configuration Content Checks"
+
+          # Verify systemd is enabled
+          if grep -q 'systemd = true' "/tmp/rootfs-check/etc/wsl.conf"; then
+            echo "✅ PASS: systemd is enabled in wsl.conf"
+          else
+            echo "❌ FAIL: systemd not enabled in wsl.conf"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # Verify root has no password
+          if grep -q '^root:!:' "/tmp/rootfs-check/etc/shadow" || grep -q '^root:\*:' "/tmp/rootfs-check/etc/shadow"; then
+            echo "✅ PASS: root account has no password"
+          else
+            echo "⚠️  WARN: root account may have a password set"
+          fi
+
+          echo ""
+          echo "## Prohibited Files Check"
+
+          # These files should NOT exist in rootfs
+          check_file_not_exists "/tmp/rootfs-check/etc/resolv.conf"
+          check_file_not_exists "/tmp/rootfs-check/etc/machine-id"
+          check_file_not_exists "/tmp/rootfs-check/boot/vmlinuz-linux"
+          check_file_not_exists "/tmp/rootfs-check/boot/initramfs-linux.img"
+
+          echo ""
+          echo "## JSON Validation"
+
+          # Validate terminal-profile.json
+          if jq empty "/tmp/rootfs-check/usr/lib/wsl/terminal-profile.json" 2>/dev/null; then
+            echo "✅ PASS: terminal-profile.json is valid JSON"
+
+            # Check it doesn't contain forbidden fields
+            if jq 'has("name")' "/tmp/rootfs-check/usr/lib/wsl/terminal-profile.json" | grep -q true; then
+              echo "❌ FAIL: terminal-profile.json should not contain 'name' field"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ PASS: terminal-profile.json does not contain 'name' field"
+            fi
+
+            if jq 'has("commandLine")' "/tmp/rootfs-check/usr/lib/wsl/terminal-profile.json" | grep -q true; then
+              echo "❌ FAIL: terminal-profile.json should not contain 'commandLine' field"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✅ PASS: terminal-profile.json does not contain 'commandLine' field"
+            fi
+          else
+            echo "❌ FAIL: terminal-profile.json is invalid JSON"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          echo ""
+          echo "## Size Checks"
+
+          # Check archive size
+          tar_size=$(stat -c '%s' "$GITHUB_WORKSPACE/dist/cachyos-v3-rootfs.tar.gz")
+          tar_size_mb=$((tar_size / 1024 / 1024))
+
+          if [ "$tar_size" -lt 1073741824 ]; then  # 1GB
+            echo "✅ PASS: Archive size is reasonable (${tar_size_mb}MB)"
+          else
+            echo "❌ FAIL: Archive too large (${tar_size_mb}MB, should be under 1GB)"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # Check icon size
+          if [ -f "/tmp/rootfs-check/usr/lib/wsl/cachyos.ico" ]; then
+            icon_size=$(stat -c '%s' "/tmp/rootfs-check/usr/lib/wsl/cachyos.ico")
+            icon_size_kb=$((icon_size / 1024))
+
+            if [ "$icon_size" -lt 10485760 ]; then  # 10MB
+              echo "✅ PASS: Icon file size is acceptable (${icon_size_kb}KB)"
+            else
+              echo "❌ FAIL: Icon file too large (${icon_size_kb}KB, should be under 10MB)"
+              ERRORS=$((ERRORS + 1))
+            fi
+          fi
+
+          echo ""
+          echo "## OOBE Script Syntax Check"
+
+          # Check bash syntax
+          if bash -n "/tmp/rootfs-check/usr/lib/wsl/oobe.sh"; then
+            echo "✅ PASS: OOBE script has valid bash syntax"
+          else
+            echo "❌ FAIL: OOBE script has syntax errors"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          echo ""
+          echo "========================================="
+          if [ $ERRORS -eq 0 ]; then
+            echo "✅ All validation checks passed!"
+            exit 0
+          else
+            echo "❌ $ERRORS validation check(s) failed"
+            exit 1
+          fi
+
+      - name: Create .wsl file for artifact
+        run: |
+          echo "==> Creating .wsl file..."
+          cp dist/cachyos-v3-rootfs.tar.gz dist/cachyos-v3.wsl
+          ls -lh dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cachyos-wsl-${{ github.sha }}
+          path: |
+            dist/cachyos-v3-rootfs.tar.gz
+            dist/cachyos-v3.wsl
+          retention-days: 30
+          compression-level: 0  # Already compressed
+
+      - name: Build summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Build completed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cachyos-v3-rootfs.tar.gz\` - Source rootfs archive" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cachyos-v3.wsl\` - Installable WSL distribution" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          tar_size=$(stat -c '%s' "dist/cachyos-v3-rootfs.tar.gz")
+          tar_size_mb=$((tar_size / 1024 / 1024))
+          echo "### Archive Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Size**: ${tar_size_mb}MB" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "Download the artifact from the Actions tab to test locally." >> $GITHUB_STEP_SUMMARY
