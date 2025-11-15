@@ -15,8 +15,10 @@ cachyos-mirrorlist
 
 # ALHP (Arch Linux Holo Ports) Packages
 # Additional optimized package repositories for x86-64-v3 and higher
-alhp-keyring
-alhp-mirrorlist
+# Note: ALHP packages not available in standard CachyOS repositories
+# Users can manually add ALHP repository after installation if desired
+# alhp-keyring
+# alhp-mirrorlist
 
 # Privilege Escalation
 # Required for users to perform administrative tasks
