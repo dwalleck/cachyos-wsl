@@ -1,0 +1,21 @@
+# Build artifacts
+dist/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+
+# Test/debug files
+*.log

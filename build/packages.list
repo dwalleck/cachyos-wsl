@@ -1,0 +1,41 @@
+# CachyOS WSL Root Filesystem Package List
+#
+# This file defines the packages to install in the rootfs.
+# Keep it minimal - users can install additional packages later.
+
+# Base System
+# The 'base' meta-package provides essential system utilities
+base
+
+# CachyOS Core Packages
+# These provide CachyOS-specific functionality and repository access
+cachyos-hooks
+cachyos-keyring
+cachyos-mirrorlist
+
+# ALHP (Arch Linux Holo Ports) Packages
+# Additional optimized package repositories for x86-64-v3 and higher
+alhp-keyring
+alhp-mirrorlist
+
+# Privilege Escalation
+# Required for users to perform administrative tasks
+sudo
+
+# Networking
+# iptables-nft provides modern netfilter functionality
+iptables-nft
+
+# Text Editor
+# Essential for configuration file editing
+nano
+vim
+
+# Development Tools (optional but useful)
+# Uncomment if you want basic development tools in the base image
+# base-devel
+# git
+
+# Package Management Helpers
+# Uncomment if you want reflector for mirror management
+# reflector
