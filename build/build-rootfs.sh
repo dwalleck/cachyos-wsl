@@ -170,11 +170,11 @@ if [ -d "$CONFIG_DIR" ]; then
     fi
 
     # Copy icon if it exists
-    if [ -f "$PROJECT_ROOT/assets/cachyos-icon.ico" ]; then
+    if [ -f "$PROJECT_ROOT/assets/cachyos.ico" ]; then
         echo "  - Copying icon"
         mkdir -p "$ROOTFS_DIR/usr/lib/wsl"
-        cp "$PROJECT_ROOT/assets/cachyos-icon.ico" "$ROOTFS_DIR/usr/lib/wsl/cachyos-icon.ico"
-        chmod 644 "$ROOTFS_DIR/usr/lib/wsl/cachyos-icon.ico"
+        cp "$PROJECT_ROOT/assets/cachyos.ico" "$ROOTFS_DIR/usr/lib/wsl/cachyos.ico"
+        chmod 644 "$ROOTFS_DIR/usr/lib/wsl/cachyos.ico"
     fi
 else
     echo "  - No config directory found, skipping configuration files"
