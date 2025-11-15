@@ -1,0 +1,31 @@
+{
+    "colorScheme": {
+        "background": "#2E3440",
+        "foreground": "#D8DEE9",
+        "black": "#3B4252",
+        "red": "#BF616A",
+        "green": "#A3BE8C",
+        "yellow": "#EBCB8B",
+        "blue": "#81A1C1",
+        "purple": "#B48EAD",
+        "cyan": "#1dc7b5",
+        "white": "#E5E9F0",
+        "brightBlack": "#4C566A",
+        "brightRed": "#BF616A",
+        "brightGreen": "#A3BE8C",
+        "brightYellow": "#EBCB8B",
+        "brightBlue": "#81A1C1",
+        "brightPurple": "#B48EAD",
+        "brightCyan": "#00ccff",
+        "brightWhite": "#ECEFF4",
+        "cursorColor": "#1dc7b5",
+        "selectionBackground": "#4C566A"
+    },
+    "font": {
+        "face": "Cascadia Code",
+        "size": 10
+    },
+    "antialiasingMode": "grayscale",
+    "cursorShape": "bar",
+    "opacity": 95
+}
