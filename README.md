@@ -219,6 +219,42 @@ This project was built as a learning exercise to understand WSL custom distribut
 4. Document any issues or improvements
 5. Iterate
 
+### Release Process
+
+Releases are automated using GitHub Actions. When you push a version tag, the workflow automatically builds, validates, and publishes the release.
+
+#### Creating a New Release
+
+1. **Ensure your changes are committed and pushed:**
+   ```bash
+   git add .
+   git commit -m "Your changes"
+   git push
+   ```
+
+2. **Create and push a version tag:**
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+3. **GitHub Actions will automatically:**
+   - Build the rootfs using Docker
+   - Run comprehensive validation checks
+   - Create the `.wsl` file
+   - Create a GitHub Release at `https://github.com/dwalleck/cachyos-wsl/releases`
+   - Upload `cachyos-v3.wsl` as a downloadable asset
+   - Generate release notes
+
+#### Continuous Integration
+
+Every push to `main` or `develop` branches triggers the build workflow, which:
+- Builds and validates the distribution
+- Runs static validation checks
+- Uploads build artifacts for testing
+
+See `.github/workflows/build.yml` and `.github/workflows/release.yml` for workflow details.
+
 ## Credits
 
 - **CachyOS Team** - For the excellent Arch-based distribution and optimizations

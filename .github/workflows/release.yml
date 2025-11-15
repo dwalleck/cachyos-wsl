@@ -24,6 +24,12 @@ jobs:
           echo "==> Building CachyOS WSL rootfs..."
           make rootfs
 
+      - name: Fix file permissions
+        run: |
+          echo "==> Fixing file permissions from Docker build..."
+          sudo chown -R $USER:$USER dist/
+          ls -lh dist/
+
       - name: Extract and validate rootfs
         run: |
           echo "==> Extracting rootfs for validation..."
