@@ -183,6 +183,9 @@ check_file_contains "$ROOTFS_DIR/etc/wsl.conf" "enabled = true" "wsl.conf intero
 check_file_contains "$ROOTFS_DIR/etc/wsl-distribution.conf" "defaultUid = 1000" "wsl-distribution.conf defaultUid"
 check_file_contains "$ROOTFS_DIR/etc/wsl-distribution.conf" "command = /usr/lib/wsl/oobe.sh" "wsl-distribution.conf OOBE command"
 
+# Check systemd default target
+check_symlink "$ROOTFS_DIR/etc/systemd/system/default.target" "multi-user.target" "systemd default target"
+
 echo ""
 
 ##############################################################################

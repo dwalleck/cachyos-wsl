@@ -181,6 +181,17 @@ else
 fi
 
 ##############################################################################
+# Configure systemd
+##############################################################################
+
+echo "==> Configuring systemd..."
+
+# Set multi-user.target as default (WSL is headless, no GUI)
+echo "  - Setting multi-user.target as default"
+mkdir -p "$ROOTFS_DIR/etc/systemd/system"
+ln -sf /usr/lib/systemd/system/multi-user.target "$ROOTFS_DIR/etc/systemd/system/default.target"
+
+##############################################################################
 # Run WSL cleanup
 ##############################################################################
 
