@@ -209,9 +209,10 @@ fi
 if [ -f "$ROOTFS_DIR/etc/pacman.d/mirrorlist" ]; then
     echo "  - Enabling mirrors in /etc/pacman.d/mirrorlist"
     # Uncomment the first few worldwide mirrors for reliability
-    sed -i '0,/^#Server = https:\/\/geo\.mirror\.pkgbuild\.com/s/^#//' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
-    sed -i '0,/^#Server = https:\/\/fastly\.mirror\.pkgbuild\.com/s/^#//' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
-    sed -i '0,/^#Server = https:\/\/mirror\.rackspace\.com/s/^#//' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
+    # Match full URLs to avoid uncommenting comment headers
+    sed -i 's|^#Server = https://geo.mirror.pkgbuild.com|Server = https://geo.mirror.pkgbuild.com|' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
+    sed -i 's|^#Server = https://fastly.mirror.pkgbuild.com|Server = https://fastly.mirror.pkgbuild.com|' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
+    sed -i 's|^#Server = https://mirror.rackspace.com/archlinux|Server = https://mirror.rackspace.com/archlinux|' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
     echo "  - Enabled geo.mirror.pkgbuild.com, fastly.mirror.pkgbuild.com, and mirror.rackspace.com"
 else
     echo "  - Warning: /etc/pacman.d/mirrorlist not found"
