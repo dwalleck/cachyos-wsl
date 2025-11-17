@@ -205,9 +205,33 @@ else
     echo "  - Warning: /etc/pacman.conf not found, skipping Color configuration"
 fi
 
+# Configure CachyOS mirrorlist
+# Check if cachyos-mirrorlist exists, if not create it with default mirror
+CACHYOS_MIRRORLIST="$ROOTFS_DIR/etc/pacman.d/cachyos-mirrorlist"
+if [ -f "$CACHYOS_MIRRORLIST" ]; then
+    echo "  - Enabling CachyOS mirrors in cachyos-mirrorlist"
+    # Try to enable existing mirrors if they're commented out
+    sed -i 's|^#Server|Server|' "$CACHYOS_MIRRORLIST" || true
+else
+    echo "  - Creating cachyos-mirrorlist with default mirror"
+    mkdir -p "$ROOTFS_DIR/etc/pacman.d"
+    cat > "$CACHYOS_MIRRORLIST" <<'EOF'
+##
+## CachyOS repository mirrorlist
+##
+
+## Worldwide
+Server = https://cdn.cachyos.org/repo/$arch/$repo
+EOF
+    echo "  - Created cachyos-mirrorlist"
+fi
+
+# Note: CachyOS GPG keys will be initialized during OOBE
+# The OOBE script runs: pacman-key --init && pacman-key --populate archlinux cachyos
+
 # Add CachyOS optimized repositories (x86-64-v3 for broad compatibility)
 # These must be BEFORE standard Arch repos to take priority
-if [ -f "$ROOTFS_DIR/etc/pacman.conf" ]; then
+if [ -f "$ROOTFS_DIR/etc/pacman.conf" ] && [ -f "$CACHYOS_MIRRORLIST" ]; then
     echo "  - Adding CachyOS optimized repositories (x86-64-v3)"
     # Insert CachyOS repos before [core]
     sed -i '/^\[core\]/i \
@@ -229,7 +253,7 @@ Include = /etc/pacman.d/cachyos-mirrorlist\
 ' "$ROOTFS_DIR/etc/pacman.conf"
     echo "  - Added cachyos-v3, cachyos-core-v3, cachyos-extra-v3, and cachyos repositories"
 else
-    echo "  - Warning: /etc/pacman.conf not found, skipping CachyOS repository configuration"
+    echo "  - Warning: Cannot add CachyOS repositories (missing pacman.conf or cachyos-mirrorlist)"
 fi
 
 # Enable some Arch mirrors in mirrorlist
@@ -262,7 +286,10 @@ echo "==> Validating rootfs..."
 # Ensure jq is installed on build host for JSON validation
 if ! command -v jq &> /dev/null; then
     echo "  - Installing jq for JSON validation..."
-    pacman -S --noconfirm jq
+    # Sync databases first, then install jq
+    # Use || true to continue even if CachyOS repos fail
+    pacman -Sy --noconfirm 2>&1 || echo "Warning: Some repository databases failed to sync"
+    pacman -S --noconfirm jq 2>&1 || echo "Warning: Failed to install jq, JSON validation will be limited"
 fi
 
 VALIDATE_SCRIPT="$SCRIPT_DIR/validate.sh"
