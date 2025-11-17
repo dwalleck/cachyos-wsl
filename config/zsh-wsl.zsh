@@ -18,3 +18,12 @@ if [ -f /etc/locale.conf ]; then
     export $(grep '^LANG=' /etc/locale.conf)
     export LC_ALL="$LANG"
 fi
+
+# WSLg support: Set XDG_RUNTIME_DIR to where WSLg mounts Wayland/DBus sockets
+# WSLg provides Wayland, X11, and PulseAudio sockets in /mnt/wslg/runtime-dir
+# This is required for GUI applications to work properly with WSLg
+if [ -d /mnt/wslg/runtime-dir ]; then
+    export XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir
+    export WAYLAND_DISPLAY=wayland-0
+    export DISPLAY=:0
+fi

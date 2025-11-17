@@ -21,3 +21,12 @@ if test -f /etc/locale.conf
         set -gx LC_ALL $locale_lang
     end
 end
+
+# WSLg support: Set XDG_RUNTIME_DIR to where WSLg mounts Wayland/DBus sockets
+# WSLg provides Wayland, X11, and PulseAudio sockets in /mnt/wslg/runtime-dir
+# This is required for GUI applications to work properly with WSLg
+if test -d /mnt/wslg/runtime-dir
+    set -gx XDG_RUNTIME_DIR /mnt/wslg/runtime-dir
+    set -gx WAYLAND_DISPLAY wayland-0
+    set -gx DISPLAY :0
+end
