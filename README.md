@@ -48,6 +48,30 @@ For testing the distribution locally before wider distribution:
 
 See [Testing Guide](docs/testing-guide.md) for detailed testing procedures.
 
+## Post-Install Configuration
+
+### Windows Terminal Profile Setup
+
+When installing with `wsl --install --from-file`, the Windows Terminal profile isn't automatically created. Run the post-install script to configure it:
+
+```powershell
+# Interactive setup (recommended)
+.\scripts\setup-terminal.ps1
+
+# Or use the advanced script
+.\scripts\Setup-WindowsTerminalProfile.ps1 -SetAsDefault
+```
+
+This will:
+- ✅ Add CachyOS to Windows Terminal with custom colors
+- ✅ Export and configure the CachyOS icon
+- ✅ Set up the Nord-based color scheme with signature teal/cyan accents
+- ✅ Optionally set CachyOS as your default profile
+
+See [scripts/README.md](scripts/README.md) for more details and troubleshooting.
+
+> **Note:** This step is only needed for manual installations with `--from-file`. Microsoft Store distributions (when available) will configure Windows Terminal automatically.
+
 ## Building from Source
 
 ### Prerequisites
@@ -145,11 +169,13 @@ Located at `/etc/wsl-distribution.conf`:
 
 ## Windows Terminal Integration
 
-The distribution automatically creates a Windows Terminal profile with:
+The distribution includes configuration for a Windows Terminal profile with:
 - **Nord-based dark theme** - Matches CachyOS desktop aesthetic
 - **Signature cyan colors** - CachyOS branding (#1dc7b5, #00ccff)
-- **Cascadia Code font** - Modern monospace with ligatures
-- **95% opacity** - Subtle transparency
+- **CachyOS icon** - Custom branding for the profile
+- **Starts in home directory** - Opens in `~` by default
+
+> **Note:** For manual installations, you need to run the post-install script to apply this configuration. See [Post-Install Configuration](#post-install-configuration) above.
 
 ## Troubleshooting
 
@@ -201,6 +227,8 @@ cachyos-wsl/
 │   ├── cachyos.svg      # Original logo (vector)
 │   └── cachyos.ico      # Windows icon (multi-resolution)
 ├── scripts/             # Helper scripts
+│   ├── setup-terminal.ps1     # Quick Windows Terminal setup
+│   ├── Setup-WindowsTerminalProfile.ps1  # Advanced Terminal setup
 │   └── override-manifest.ps1  # Local testing script
 ├── docs/                # Documentation
 ├── dist/                # Build output (gitignored)
