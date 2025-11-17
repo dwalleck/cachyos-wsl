@@ -157,6 +157,36 @@ fi
 echo "Default user set to: $username"
 
 ##############################################################################
+# Configure shell to start in home directory
+##############################################################################
+
+echo ""
+echo "Configuring shell to start in home directory..."
+
+# Add snippet to .bashrc to change to home directory when starting from Windows paths
+# This ensures WSL starts in the Linux home directory instead of Windows home
+USER_BASHRC="/home/$username/.bashrc"
+
+if [ -f "$USER_BASHRC" ]; then
+    # Check if snippet already exists
+    if ! grep -q "WSL: Start in home directory" "$USER_BASHRC"; then
+        cat >> "$USER_BASHRC" <<'BASHRC_EOF'
+
+# WSL: Start in home directory if launched from Windows path
+# This provides a better user experience by defaulting to Linux home
+if [[ "$PWD" == /mnt/* ]]; then
+    cd ~
+fi
+BASHRC_EOF
+        echo "Added home directory snippet to .bashrc"
+    else
+        echo ".bashrc already configured"
+    fi
+else
+    echo "Warning: .bashrc not found for $username"
+fi
+
+##############################################################################
 # Success message
 ##############################################################################
 
