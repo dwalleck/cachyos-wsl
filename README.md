@@ -148,6 +148,78 @@ sudo pacman -R <package-name>
 - **extra** - Additional Arch Linux packages
 - **multilib** - 32-bit libraries
 - **cachyos** - CachyOS-specific optimized packages
+- **cachyos-v3** - x86-64-v3 optimized packages (5-20% performance improvement)
+- **cachyos-core-v3** - x86-64-v3 optimized core packages
+- **cachyos-extra-v3** - x86-64-v3 optimized extra packages
+
+## Shell Configuration
+
+CachyOS WSL includes three shells with full CachyOS customizations:
+
+### Fish (Default Shell)
+
+**Fish** is set as the default shell, providing a modern command-line experience with:
+- **Syntax highlighting** - Commands are colored as you type
+- **Autosuggestions** - Fish suggests commands from your history
+- **CachyOS customizations** - System maintenance aliases, enhanced utilities
+- **Enhanced utilities** - Uses `eza` for colorful file listings, `bat` for syntax-highlighted file viewing
+- **fastfetch greeting** - Displays system information on shell startup
+
+#### Fish Features
+```fish
+# CachyOS-specific aliases
+update          # Update mirror list and upgrade system
+cleanup         # Remove orphaned packages
+mirror          # Run cachyos-rate-mirrors for optimal performance
+rip             # List recent package installations
+
+# Enhanced commands (automatically aliased)
+ls → eza        # Modern ls with colors and icons
+ll → eza -al    # Long listing format
+cat → bat       # Syntax-highlighted file viewing
+```
+
+### Zsh (Alternative Shell)
+
+**Zsh** is available with oh-my-zsh and Powerlevel10k theme:
+- **Powerlevel10k prompt** - Fast, customizable, beautiful prompt
+- **Oh-My-Zsh framework** - Plugins: git, fzf, extract
+- **CachyOS aliases** - Same system maintenance shortcuts as Fish
+- **Enhanced suggestions** - Fish-style autosuggestions and syntax highlighting
+
+To switch to Zsh:
+```bash
+chsh -s /usr/bin/zsh
+```
+
+Then log out and log back in for the change to take effect.
+
+### Bash (Fallback Shell)
+
+**Bash** remains available as a traditional, POSIX-compatible fallback:
+```bash
+chsh -s /bin/bash
+```
+
+### Shell Features Comparison
+
+| Feature | Fish | Zsh | Bash |
+|---------|------|-----|------|
+| Syntax highlighting | ✅ | ✅ (plugin) | ❌ |
+| Autosuggestions | ✅ | ✅ (plugin) | ❌ |
+| CachyOS aliases | ✅ | ✅ | ❌ |
+| Enhanced utilities (eza, bat) | ✅ | ✅ | ❌ |
+| POSIX compatible | ❌ | ✅ | ✅ |
+| Default shell | ✅ | ❌ | ❌ |
+
+### Fonts for Best Experience
+
+For optimal visual experience (icons in file listings, fancy prompts), use a **Nerd Font** in your Windows Terminal:
+- **Fantasque Sans Mono Nerd Font** (included in distribution)
+- **Cascadia Code Nerd Font**
+- **FiraCode Nerd Font**
+
+Configure in Windows Terminal Settings → Profiles → CachyOS → Appearance → Font face.
 
 ## Configuration
 
@@ -222,7 +294,9 @@ cachyos-wsl/
 │   ├── oobe.sh          # First-run user setup script
 │   ├── wsl.conf         # WSL per-distribution settings
 │   ├── wsl-distribution.conf  # Distribution metadata
-│   └── terminal-profile.json  # Windows Terminal colors
+│   ├── terminal-profile.json  # Windows Terminal colors
+│   ├── fish-wsl.fish    # Fish shell WSL-specific config
+│   └── zsh-wsl.zsh      # Zsh shell WSL-specific config
 ├── assets/              # Branding assets
 │   ├── cachyos.svg      # Original logo (vector)
 │   └── cachyos.ico      # Windows icon (multi-resolution)

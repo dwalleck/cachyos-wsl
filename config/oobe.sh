@@ -63,7 +63,7 @@ while true; do
         --uid "$DEFAULT_UID" \
         --groups "$DEFAULT_GROUPS" \
         --create-home \
-        --shell /bin/bash \
+        --shell /usr/bin/fish \
         "$username"; then
 
         # Set password
@@ -200,11 +200,23 @@ echo "  - UID: $DEFAULT_UID"
 echo "  - Groups: $DEFAULT_GROUPS"
 echo "  - Sudo access: enabled"
 echo "  - Package manager: configured"
+echo "  - Default shell: Fish (modern, user-friendly)"
 echo ""
 echo "You can now use 'sudo' to run commands with administrative privileges."
 echo ""
-echo "To update packages: sudo pacman -Syu"
-echo "To install packages: sudo pacman -S <package-name>"
+echo "Shell options:"
+echo "  - Fish (default): Modern shell with excellent defaults and CachyOS customizations"
+echo "  - Zsh: Powerful shell with oh-my-zsh and Powerlevel10k theme"
+echo "  - Bash: Traditional shell (available as fallback)"
+echo ""
+echo "To switch shells:"
+echo "  chsh -s /usr/bin/fish   # Fish (default)"
+echo "  chsh -s /usr/bin/zsh    # Zsh"
+echo "  chsh -s /bin/bash       # Bash"
+echo ""
+echo "Package management:"
+echo "  sudo pacman -Syu         # Update all packages"
+echo "  sudo pacman -S <package> # Install a package"
 echo ""
 echo "Enjoy CachyOS on WSL!"
 echo ""

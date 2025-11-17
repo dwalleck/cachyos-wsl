@@ -37,6 +37,43 @@ vim
 # jq: JSON processing (for config validation)
 jq
 
+# Shell: Bash (fallback)
+bash
+bash-completion
+
+# Shell: Fish with CachyOS Configuration
+# Modern shell with excellent defaults and CachyOS customizations
+fish
+fisher
+cachyos-fish-config
+fish-autopair
+fish-pure-prompt
+
+# Shell: Zsh with CachyOS Configuration
+# Powerful shell with oh-my-zsh and Powerlevel10k theme
+zsh
+cachyos-zsh-config
+oh-my-zsh-git
+zsh-theme-powerlevel10k
+zsh-autosuggestions
+zsh-completions
+zsh-history-substring-search
+zsh-syntax-highlighting
+
+# Enhanced CLI Utilities (required by CachyOS shell configs)
+bat            # cat replacement with syntax highlighting
+eza            # ls replacement with colors and icons
+fastfetch      # System information display
+fzf            # Fuzzy finder
+tealdeer       # Fast tldr client
+expac          # Pacman database extraction utility
+pkgfile        # Command-not-found handler for Arch
+
+# Fonts for Shell Themes
+# Nerd Fonts provide icons for eza and shell prompts
+ttf-fantasque-nerd
+powerline-fonts
+
 # Development Tools (optional but useful)
 # Uncomment if you want basic development tools in the base image
 # base-devel

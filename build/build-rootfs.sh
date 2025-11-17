@@ -176,6 +176,41 @@ if [ -d "$CONFIG_DIR" ]; then
         cp "$PROJECT_ROOT/assets/cachyos.ico" "$ROOTFS_DIR/usr/lib/wsl/cachyos.ico"
         chmod 644 "$ROOTFS_DIR/usr/lib/wsl/cachyos.ico"
     fi
+
+    # Install WSL-specific shell configurations to /etc/skel
+    # These will be automatically copied to new user home directories during OOBE
+    echo "  - Installing WSL shell configurations to /etc/skel"
+
+    # Fish WSL configuration
+    if [ -f "$CONFIG_DIR/fish-wsl.fish" ]; then
+        echo "    - Installing Fish WSL config"
+        mkdir -p "$ROOTFS_DIR/etc/skel/.config/fish/conf.d"
+        cp "$CONFIG_DIR/fish-wsl.fish" "$ROOTFS_DIR/etc/skel/.config/fish/conf.d/wsl.fish"
+        chmod 644 "$ROOTFS_DIR/etc/skel/.config/fish/conf.d/wsl.fish"
+    fi
+
+    # Zsh WSL configuration
+    if [ -f "$CONFIG_DIR/zsh-wsl.zsh" ]; then
+        echo "    - Installing Zsh WSL config"
+        mkdir -p "$ROOTFS_DIR/etc/skel/.zshrc.d"
+        cp "$CONFIG_DIR/zsh-wsl.zsh" "$ROOTFS_DIR/etc/skel/.zshrc.d/wsl.zsh"
+        chmod 644 "$ROOTFS_DIR/etc/skel/.zshrc.d/wsl.zsh"
+
+        # Ensure .zshrc sources the WSL config (if .zshrc exists in /etc/skel)
+        if [ -f "$ROOTFS_DIR/etc/skel/.zshrc" ]; then
+            # Check if sourcing line already exists
+            if ! grep -q "source.*zshrc.d/wsl.zsh" "$ROOTFS_DIR/etc/skel/.zshrc"; then
+                echo "    - Adding WSL config source to .zshrc"
+                cat >> "$ROOTFS_DIR/etc/skel/.zshrc" <<'ZSHRC_EOF'
+
+# WSL-specific configuration
+[ -f ~/.zshrc.d/wsl.zsh ] && source ~/.zshrc.d/wsl.zsh
+ZSHRC_EOF
+            fi
+        fi
+    fi
+
+    echo "  - Shell configurations installed"
 else
     echo "  - No config directory found, skipping configuration files"
 fi
