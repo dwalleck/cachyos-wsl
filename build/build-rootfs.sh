@@ -205,6 +205,33 @@ else
     echo "  - Warning: /etc/pacman.conf not found, skipping Color configuration"
 fi
 
+# Add CachyOS optimized repositories (x86-64-v3 for broad compatibility)
+# These must be BEFORE standard Arch repos to take priority
+if [ -f "$ROOTFS_DIR/etc/pacman.conf" ]; then
+    echo "  - Adding CachyOS optimized repositories (x86-64-v3)"
+    # Insert CachyOS repos before [core]
+    sed -i '/^\[core\]/i \
+# CachyOS Optimized Repositories (5-20% performance improvement)\
+# Using x86-64-v3 for broad compatibility with modern CPUs\
+# See: https://wiki.cachyos.org/features/optimized_repos/\
+\
+[cachyos-v3]\
+Include = /etc/pacman.d/cachyos-mirrorlist\
+\
+[cachyos-core-v3]\
+Include = /etc/pacman.d/cachyos-mirrorlist\
+\
+[cachyos-extra-v3]\
+Include = /etc/pacman.d/cachyos-mirrorlist\
+\
+[cachyos]\
+Include = /etc/pacman.d/cachyos-mirrorlist\
+' "$ROOTFS_DIR/etc/pacman.conf"
+    echo "  - Added cachyos-v3, cachyos-core-v3, cachyos-extra-v3, and cachyos repositories"
+else
+    echo "  - Warning: /etc/pacman.conf not found, skipping CachyOS repository configuration"
+fi
+
 # Enable some Arch mirrors in mirrorlist
 if [ -f "$ROOTFS_DIR/etc/pacman.d/mirrorlist" ]; then
     echo "  - Enabling mirrors in /etc/pacman.d/mirrorlist"
