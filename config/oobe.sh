@@ -122,6 +122,87 @@ else
 fi
 
 ##############################################################################
+# Configure system locale
+##############################################################################
+
+echo ""
+echo "Configuring system locale..."
+
+# Try to detect Windows locale and map to Linux locale
+DETECTED_LOCALE=""
+if command -v powershell.exe &> /dev/null; then
+    # Get Windows locale (e.g., "en-US", "de-DE", "ja-JP")
+    WIN_LOCALE=$(powershell.exe -NoProfile -Command "Get-Culture | Select-Object -ExpandProperty Name" 2>/dev/null | tr -d '\r\n')
+
+    # Map common Windows locales to Linux locales
+    case "$WIN_LOCALE" in
+        en-US) DETECTED_LOCALE="en_US.UTF-8" ;;
+        en-GB) DETECTED_LOCALE="en_GB.UTF-8" ;;
+        de-DE) DETECTED_LOCALE="de_DE.UTF-8" ;;
+        fr-FR) DETECTED_LOCALE="fr_FR.UTF-8" ;;
+        es-ES) DETECTED_LOCALE="es_ES.UTF-8" ;;
+        it-IT) DETECTED_LOCALE="it_IT.UTF-8" ;;
+        ja-JP) DETECTED_LOCALE="ja_JP.UTF-8" ;;
+        zh-CN) DETECTED_LOCALE="zh_CN.UTF-8" ;;
+        zh-TW) DETECTED_LOCALE="zh_TW.UTF-8" ;;
+        ko-KR) DETECTED_LOCALE="ko_KR.UTF-8" ;;
+        pt-BR) DETECTED_LOCALE="pt_BR.UTF-8" ;;
+        ru-RU) DETECTED_LOCALE="ru_RU.UTF-8" ;;
+        pl-PL) DETECTED_LOCALE="pl_PL.UTF-8" ;;
+        nl-NL) DETECTED_LOCALE="nl_NL.UTF-8" ;;
+        sv-SE) DETECTED_LOCALE="sv_SE.UTF-8" ;;
+        *)     DETECTED_LOCALE="en_US.UTF-8" ;;  # Fallback
+    esac
+fi
+
+# Default to en_US.UTF-8 if detection failed
+SELECTED_LOCALE="${DETECTED_LOCALE:-en_US.UTF-8}"
+
+# Show detected/default locale and allow user to change
+echo ""
+if [ -n "$WIN_LOCALE" ]; then
+    echo "Detected Windows locale: $WIN_LOCALE"
+fi
+echo "System locale will be set to: $SELECTED_LOCALE"
+read -p "Press Enter to accept, or type a different locale (e.g., de_DE.UTF-8, ja_JP.UTF-8): " user_locale
+
+if [ -n "$user_locale" ]; then
+    SELECTED_LOCALE="$user_locale"
+    echo "Using locale: $SELECTED_LOCALE"
+fi
+
+# Convert locale to locale.gen format (e.g., "en_US.UTF-8 UTF-8")
+LOCALE_GEN_LINE="${SELECTED_LOCALE} UTF-8"
+
+# Enable the selected locale in locale.gen
+if [ -f /etc/locale.gen ]; then
+    # Uncomment the selected locale if it exists
+    if grep -q "^#${LOCALE_GEN_LINE}" /etc/locale.gen; then
+        sed -i "s/^#${LOCALE_GEN_LINE}/${LOCALE_GEN_LINE}/" /etc/locale.gen
+    # Or add it if it doesn't exist
+    elif ! grep -q "^${LOCALE_GEN_LINE}" /etc/locale.gen; then
+        echo "${LOCALE_GEN_LINE}" >> /etc/locale.gen
+    fi
+
+    # Generate the locale
+    if locale-gen; then
+        echo "Locale '${SELECTED_LOCALE}' generated successfully."
+    else
+        echo "Warning: Locale generation failed. Falling back to C locale."
+        SELECTED_LOCALE="C.UTF-8"
+    fi
+else
+    echo "Warning: /etc/locale.gen not found, using C.UTF-8"
+    SELECTED_LOCALE="C.UTF-8"
+fi
+
+# Set system-wide locale
+echo "LANG=${SELECTED_LOCALE}" > /etc/locale.conf
+export LANG="${SELECTED_LOCALE}"
+
+echo "System locale set to: ${SELECTED_LOCALE}"
+
+##############################################################################
 # Set default user in wsl.conf
 ##############################################################################
 
