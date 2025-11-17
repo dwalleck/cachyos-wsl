@@ -61,13 +61,20 @@ zsh-history-substring-search
 zsh-syntax-highlighting
 
 # Enhanced CLI Utilities (required by CachyOS shell configs)
-bat            # cat replacement with syntax highlighting
-eza            # ls replacement with colors and icons
-fastfetch      # System information display
-fzf            # Fuzzy finder
-tealdeer       # Fast tldr client
-expac          # Pacman database extraction utility
-pkgfile        # Command-not-found handler for Arch
+# bat: cat replacement with syntax highlighting
+# eza: ls replacement with colors and icons
+# fastfetch: System information display
+# fzf: Fuzzy finder
+# tealdeer: Fast tldr client
+# expac: Pacman database extraction utility
+# pkgfile: Command-not-found handler for Arch
+bat
+eza
+fastfetch
+fzf
+tealdeer
+expac
+pkgfile
 
 # Fonts for Shell Themes
 # Nerd Fonts provide icons for eza and shell prompts
