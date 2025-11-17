@@ -84,18 +84,35 @@ The build follows this dependency chain:
 - Handle existing user gracefully (check if uid 1000 exists)
 
 ### systemd Configuration (if enabled)
+
+**Current Implementation**: We use a simplified approach (Option 1 from `docs/systemd-user-sessions-wslg.md`) that:
+- Enables systemd for system services
+- Disables systemd user sessions to avoid conflicts with WSLg
+- Sets `XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir` directly in shell configs for WSLg support
+
 Must disable/mask these problematic units:
 - systemd-resolved.service
 - systemd-networkd.service
 - NetworkManager.service
 - systemd-tmpfiles-* services and timers
+- user@.service (prevents systemd user sessions)
 - tmp.mount
+
+**Important**: See `docs/systemd-user-sessions-wslg.md` for:
+- Detailed explanation of the systemd user session vs WSLg conflict
+- Three different implementation approaches (simple, Microsoft-recommended, full systemd)
+- Comparison with Fedora and Arch Linux WSL approaches
+- Migration path if we want to enable full systemd user services in the future
 
 ### Tar Packaging Requirements
 - Root of tar must be filesystem root (not a parent directory)
-- Use gzip compression for compatibility
 - Use `--numeric-owner` flag to preserve uid/gid numbers
-- Tar must not contain `/etc/resolv.conf`
+- Use `--exclude-from=scripts/tar-exclude.txt` to exclude virtual filesystems, caches, temp files
+- Compression options (WSL supports all):
+  - **gzip** (`gzip --best`): Fast decompression, widely compatible, larger file
+  - **xz** (`xz -T0 -9`): Better compression (~30-40% smaller), recommended for releases
+  - **zstd**: Balanced compression/speed (alternative option)
+- Must exclude: `/etc/resolv.conf`, `/etc/hostname`, `/etc/machine-id` (WSL-generated)
 
 ## Local Testing Workflow
 
@@ -118,10 +135,22 @@ Must disable/mask these problematic units:
 
 ## Reference Documentation
 
+### Microsoft Official Documentation
 - `build-custom-distro.md` - Downloaded Microsoft WSL documentation for building custom distributions
 - `use-custom-distro.md` - Documentation on importing/using custom distributions
 - Sample OOBE script in `build-custom-distro.md` lines 124-155
 - Sample PowerShell test script in `build-custom-distro.md` lines 336-370
+
+### CachyOS WSL Project Documentation
+- `docs/systemd-user-sessions-wslg.md` - Comprehensive guide to systemd user sessions and WSLg integration
+  - Three implementation approaches with trade-offs
+  - Analysis of Fedora and Arch Linux WSL approaches
+  - Migration path for future enhancements
+- `docs/improvements-from-other-distros.md` - Potential improvements based on Fedora and Arch Linux WSL
+  - OOBE enhancements
+  - Build process improvements
+  - Packaging best practices
+  - Priority-ranked implementation suggestions
 
 ## Architecture Notes
 
