@@ -259,6 +259,12 @@ echo "==> Running WSL cleanup..."
 
 echo "==> Validating rootfs..."
 
+# Ensure jq is installed on build host for JSON validation
+if ! command -v jq &> /dev/null; then
+    echo "  - Installing jq for JSON validation..."
+    pacman -S --noconfirm jq
+fi
+
 VALIDATE_SCRIPT="$SCRIPT_DIR/validate.sh"
 if [ -f "$VALIDATE_SCRIPT" ]; then
     "$VALIDATE_SCRIPT" "$ROOTFS_DIR"

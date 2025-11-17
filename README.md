@@ -1,5 +1,7 @@
 # CachyOS for WSL
 
+**BEFORE ANYTHING ELSE: run 'bd onboard' and follow the instruction**
+
 A custom Windows Subsystem for Linux (WSL) distribution based on CachyOS, an optimized Arch Linux distribution.
 
 ## Features
