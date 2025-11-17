@@ -205,25 +205,45 @@ else
     echo "  - Warning: /etc/pacman.conf not found, skipping Color configuration"
 fi
 
-# Configure CachyOS mirrorlist
-# Check if cachyos-mirrorlist exists, if not create it with default mirror
+# Configure CachyOS mirrorlists
+# We need TWO separate mirrorlist files:
+# 1. cachyos-mirrorlist - for base [cachyos] repo (uses $arch = x86_64)
+# 2. cachyos-v3-mirrorlist - for v3 repos (uses $arch_v3 = x86_64_v3)
+
+mkdir -p "$ROOTFS_DIR/etc/pacman.d"
+
+# Create base cachyos-mirrorlist
 CACHYOS_MIRRORLIST="$ROOTFS_DIR/etc/pacman.d/cachyos-mirrorlist"
 if [ -f "$CACHYOS_MIRRORLIST" ]; then
-    echo "  - Enabling CachyOS mirrors in cachyos-mirrorlist"
-    # Try to enable existing mirrors if they're commented out
+    echo "  - Enabling mirrors in existing cachyos-mirrorlist"
     sed -i 's|^#Server|Server|' "$CACHYOS_MIRRORLIST" || true
 else
-    echo "  - Creating cachyos-mirrorlist with default mirror"
-    mkdir -p "$ROOTFS_DIR/etc/pacman.d"
+    echo "  - Creating cachyos-mirrorlist"
     cat > "$CACHYOS_MIRRORLIST" <<'EOF'
 ##
 ## CachyOS repository mirrorlist
 ##
-
-## Worldwide
+## CDN (Worldwide)
 Server = https://cdn.cachyos.org/repo/$arch/$repo
+Server = https://cdn77.cachyos.org/repo/$arch/$repo
 EOF
-    echo "  - Created cachyos-mirrorlist"
+fi
+
+# Create v3-specific mirrorlist (uses $arch_v3 instead of $arch)
+CACHYOS_V3_MIRRORLIST="$ROOTFS_DIR/etc/pacman.d/cachyos-v3-mirrorlist"
+if [ -f "$CACHYOS_V3_MIRRORLIST" ]; then
+    echo "  - Enabling mirrors in existing cachyos-v3-mirrorlist"
+    sed -i 's|^#Server|Server|' "$CACHYOS_V3_MIRRORLIST" || true
+else
+    echo "  - Creating cachyos-v3-mirrorlist"
+    cat > "$CACHYOS_V3_MIRRORLIST" <<'EOF'
+##
+## CachyOS x86-64-v3 repository mirrorlist
+##
+## CDN (Worldwide)
+Server = https://cdn.cachyos.org/repo/$arch_v3/$repo
+Server = https://cdn77.cachyos.org/repo/$arch_v3/$repo
+EOF
 fi
 
 # Note: CachyOS GPG keys will be initialized during OOBE
@@ -231,7 +251,7 @@ fi
 
 # Add CachyOS optimized repositories (x86-64-v3 for broad compatibility)
 # These must be BEFORE standard Arch repos to take priority
-if [ -f "$ROOTFS_DIR/etc/pacman.conf" ] && [ -f "$CACHYOS_MIRRORLIST" ]; then
+if [ -f "$ROOTFS_DIR/etc/pacman.conf" ] && [ -f "$CACHYOS_V3_MIRRORLIST" ] && [ -f "$CACHYOS_MIRRORLIST" ]; then
     echo "  - Adding CachyOS optimized repositories (x86-64-v3)"
     # Insert CachyOS repos before [core]
     sed -i '/^\[core\]/i \
@@ -240,20 +260,20 @@ if [ -f "$ROOTFS_DIR/etc/pacman.conf" ] && [ -f "$CACHYOS_MIRRORLIST" ]; then
 # See: https://wiki.cachyos.org/features/optimized_repos/\
 \
 [cachyos-v3]\
-Include = /etc/pacman.d/cachyos-mirrorlist\
+Include = /etc/pacman.d/cachyos-v3-mirrorlist\
 \
 [cachyos-core-v3]\
-Include = /etc/pacman.d/cachyos-mirrorlist\
+Include = /etc/pacman.d/cachyos-v3-mirrorlist\
 \
 [cachyos-extra-v3]\
-Include = /etc/pacman.d/cachyos-mirrorlist\
+Include = /etc/pacman.d/cachyos-v3-mirrorlist\
 \
 [cachyos]\
 Include = /etc/pacman.d/cachyos-mirrorlist\
 ' "$ROOTFS_DIR/etc/pacman.conf"
     echo "  - Added cachyos-v3, cachyos-core-v3, cachyos-extra-v3, and cachyos repositories"
 else
-    echo "  - Warning: Cannot add CachyOS repositories (missing pacman.conf or cachyos-mirrorlist)"
+    echo "  - Warning: Cannot add CachyOS repositories (missing required mirrorlist files)"
 fi
 
 # Enable some Arch mirrors in mirrorlist
