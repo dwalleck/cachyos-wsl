@@ -205,6 +205,18 @@ else
     echo "  - Warning: /etc/pacman.conf not found, skipping Color configuration"
 fi
 
+# Enable some Arch mirrors in mirrorlist
+if [ -f "$ROOTFS_DIR/etc/pacman.d/mirrorlist" ]; then
+    echo "  - Enabling mirrors in /etc/pacman.d/mirrorlist"
+    # Uncomment the first few worldwide mirrors for reliability
+    sed -i '0,/^#Server = https:\/\/geo\.mirror\.pkgbuild\.com/s/^#//' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
+    sed -i '0,/^#Server = https:\/\/fastly\.mirror\.pkgbuild\.com/s/^#//' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
+    sed -i '0,/^#Server = https:\/\/mirror\.rackspace\.com/s/^#//' "$ROOTFS_DIR/etc/pacman.d/mirrorlist"
+    echo "  - Enabled geo.mirror.pkgbuild.com, fastly.mirror.pkgbuild.com, and mirror.rackspace.com"
+else
+    echo "  - Warning: /etc/pacman.d/mirrorlist not found"
+fi
+
 ##############################################################################
 # Run WSL cleanup
 ##############################################################################
