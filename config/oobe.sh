@@ -66,26 +66,46 @@ while true; do
     # Create the user with useradd (Arch-style)
     echo "Creating user: $username"
 
-    if useradd \
+    # Run useradd and capture exit code
+    set +e  # Temporarily disable exit on error
+    useradd \
         --uid "$DEFAULT_UID" \
         --groups "$DEFAULT_GROUPS" \
         --create-home \
         --shell /usr/bin/fish \
-        "$username"; then
+        "$username"
+    rc=$?
+    set -e  # Re-enable exit on error
 
-        # Set password
-        echo "Setting password for $username:"
-        if passwd "$username"; then
-            echo ""
-            echo "User $username created successfully!"
-            break
-        else
-            echo "Error: Failed to set password. Removing user and retrying."
-            userdel -r "$username" 2>/dev/null || true
-        fi
-    else
-        echo "Error: Failed to create user. Please try a different username."
-    fi
+    # Handle useradd exit codes
+    case $rc in
+        0)
+            # Success - set password
+            echo "Setting password for $username:"
+            if passwd "$username"; then
+                echo ""
+                echo "User $username created successfully!"
+                break
+            else
+                echo "Error: Failed to set password. Removing user and retrying."
+                userdel -r "$username" 2>/dev/null || true
+            fi
+            ;;
+        3|19)
+            # 3: Invalid argument to option
+            # 19: Bad login name (newer shadow-utils versions)
+            echo "Error: Invalid username format. Username must be valid for the system."
+            echo "A valid username starts with a letter or underscore, contains only"
+            echo "letters, digits, underscores, dots, dashes, and optionally ends with \$."
+            ;;
+        9)
+            # Username or UID already in use
+            echo "Error: User \"$username\" already exists. Please choose a different username."
+            ;;
+        *)
+            echo "Error: Failed to create user (exit code: $rc). Please try a different username."
+            ;;
+    esac
 done
 
 ##############################################################################
