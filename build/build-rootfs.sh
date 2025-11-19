@@ -227,6 +227,20 @@ ZSHRC_EOF
     fi
 
     echo "  - Shell configurations installed"
+
+    # Install systemd tmpfiles.d configurations
+    if [ -d "$CONFIG_DIR/tmpfiles.d" ]; then
+        echo "  - Installing tmpfiles.d configurations"
+        mkdir -p "$ROOTFS_DIR/etc/tmpfiles.d"
+        for conf_file in "$CONFIG_DIR/tmpfiles.d"/*.conf; do
+            if [ -f "$conf_file" ]; then
+                filename=$(basename "$conf_file")
+                echo "    - Installing $filename"
+                cp "$conf_file" "$ROOTFS_DIR/etc/tmpfiles.d/$filename"
+                chmod 644 "$ROOTFS_DIR/etc/tmpfiles.d/$filename"
+            fi
+        done
+    fi
 else
     echo "  - No config directory found, skipping configuration files"
 fi
