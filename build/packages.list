@@ -13,6 +13,11 @@ cachyos-hooks
 cachyos-keyring
 cachyos-mirrorlist
 
+# System Identification
+# lsb-release triggers cachyos-hooks to update /etc/os-release and /etc/lsb-release
+# with CachyOS branding (logo, colors, URLs) instead of generic Arch Linux
+lsb-release
+
 # ALHP (Arch Linux Holo Ports) Packages
 # Additional optimized package repositories for x86-64-v3 and higher
 # Note: ALHP packages not available in standard CachyOS repositories
