@@ -34,7 +34,7 @@ jobs:
           echo "==> Extracting rootfs to temporary directory..."
           mkdir -p /tmp/rootfs-check
           cd /tmp/rootfs-check
-          tar -xzf $GITHUB_WORKSPACE/dist/cachyos-v3-rootfs.tar.gz
+          tar -xJf $GITHUB_WORKSPACE/dist/cachyos-v3.wsl
           echo "✅ Rootfs extracted successfully"
 
       - name: Run static validation checks
@@ -158,7 +158,7 @@ jobs:
           echo "## Size Checks"
 
           # Check archive size
-          tar_size=$(stat -c '%s' "$GITHUB_WORKSPACE/dist/cachyos-v3-rootfs.tar.gz")
+          tar_size=$(stat -c '%s' "$GITHUB_WORKSPACE/dist/cachyos-v3.wsl")
           tar_size_mb=$((tar_size / 1024 / 1024))
 
           if [ "$tar_size" -lt 1073741824 ]; then  # 1GB
@@ -202,19 +202,14 @@ jobs:
             exit 1
           fi
 
-      - name: Create .wsl file for artifact
-        run: |
-          echo "==> Creating .wsl file..."
-          cp dist/cachyos-v3-rootfs.tar.gz dist/cachyos-v3.wsl
-          ls -lh dist/
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: cachyos-wsl-${{ github.sha }}
           path: |
-            dist/cachyos-v3-rootfs.tar.gz
             dist/cachyos-v3.wsl
+            dist/cachyos-v3.wsl.sha256
+            dist/cachyos-v3.wsl.sha512
           retention-days: 30
           compression-level: 0  # Already compressed
 
@@ -225,14 +220,17 @@ jobs:
           echo "✅ Build completed successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cachyos-v3-rootfs.tar.gz\` - Source rootfs archive" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cachyos-v3.wsl\` - Installable WSL distribution" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cachyos-v3.wsl\` - Installable WSL distribution (xz compressed)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cachyos-v3.wsl.sha256\` - SHA256 checksum" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cachyos-v3.wsl.sha512\` - SHA512 checksum" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          tar_size=$(stat -c '%s' "dist/cachyos-v3-rootfs.tar.gz")
+          tar_size=$(stat -c '%s' "dist/cachyos-v3.wsl")
           tar_size_mb=$((tar_size / 1024 / 1024))
+          sha256=$(cat dist/cachyos-v3.wsl.sha256 | cut -d' ' -f1)
           echo "### Archive Information" >> $GITHUB_STEP_SUMMARY
           echo "- **Size**: ${tar_size_mb}MB" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA256**: \`${sha256}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
