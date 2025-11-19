@@ -9,8 +9,9 @@
 #
 # This script is designed to run inside a CachyOS Docker container.
 #
-# Usage: build-rootfs.sh [architecture]
+# Usage: build-rootfs.sh [architecture] [compression]
 # Architecture: v3 (default), v4, or znver4
+# Compression: xz (default, smaller) or gzip (faster)
 
 set -e  # Exit on error
 set -u  # Exit on undefined variable
@@ -20,20 +21,27 @@ set -u  # Exit on undefined variable
 ##############################################################################
 
 ARCH="${1:-v3}"  # Default to x86-64-v3
+COMPRESSION="${2:-xz}"  # Default to xz (smaller), can be "gzip" or "xz"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ROOTFS_DIR="/rootfs"
 OUTPUT_DIR="$PROJECT_ROOT/dist"
 PACKAGE_LIST="$SCRIPT_DIR/packages.list"
 CLEANUP_SCRIPT="$SCRIPT_DIR/cleanup.sh"
+TAR_EXCLUDE_LIST="$PROJECT_ROOT/scripts/tar-exclude.txt"
 
-# Output filename
-OUTPUT_FILE="$OUTPUT_DIR/cachyos-$ARCH-rootfs.tar.gz"
+# Output filename based on compression type
+if [ "$COMPRESSION" = "xz" ]; then
+    OUTPUT_FILE="$OUTPUT_DIR/cachyos-$ARCH.wsl"
+else
+    OUTPUT_FILE="$OUTPUT_DIR/cachyos-$ARCH-rootfs.tar.gz"
+fi
 
 echo "========================================"
 echo "CachyOS WSL Rootfs Builder"
 echo "========================================"
 echo "Architecture: $ARCH"
+echo "Compression: $COMPRESSION"
 echo "Output: $OUTPUT_FILE"
 echo ""
 
@@ -369,27 +377,71 @@ if [ -f "$OUTPUT_FILE" ]; then
     rm -f "$OUTPUT_FILE"
 fi
 
+# Build exclude options if exclude list exists
+EXCLUDE_OPTS=""
+if [ -f "$TAR_EXCLUDE_LIST" ]; then
+    echo "  - Using exclude list: $TAR_EXCLUDE_LIST"
+    EXCLUDE_OPTS="--exclude-from=$TAR_EXCLUDE_LIST"
+else
+    echo "  - Warning: Exclude list not found, including all files"
+fi
+
 # Create tar archive with:
 # --numeric-owner: Use numeric user/group IDs (not names)
+# --xattrs --acls: Preserve extended attributes and ACLs
 # -c: Create archive
-# -z: Compress with gzip
 # -f: Output file
-# -C: Change to directory before archiving
-# --transform: Strip the leading 'rootfs/' from paths
 #
-# We use --transform to ensure the tar root is the filesystem root,
-# not a parent directory
+# Compression is applied separately for better control
 
 cd "$ROOTFS_DIR"
-tar --numeric-owner \
-    -czf "$OUTPUT_FILE" \
-    *
+
+if [ "$COMPRESSION" = "xz" ]; then
+    echo "  - Creating tar archive with xz compression (this may take a while)..."
+    # Create uncompressed tar first, then compress with xz
+    # -T0: Use all CPU cores
+    # -9: Maximum compression
+    tar --numeric-owner \
+        --xattrs \
+        --acls \
+        $EXCLUDE_OPTS \
+        -cf - \
+        . | xz -T0 -9 > "$OUTPUT_FILE"
+else
+    echo "  - Creating tar archive with gzip compression..."
+    tar --numeric-owner \
+        --xattrs \
+        --acls \
+        $EXCLUDE_OPTS \
+        -czf "$OUTPUT_FILE" \
+        .
+fi
 
 echo "  - Archive created: $OUTPUT_FILE"
 
 # Show archive size
 ARCHIVE_SIZE=$(du -h "$OUTPUT_FILE" | cut -f1)
 echo "  - Archive size: $ARCHIVE_SIZE"
+
+##############################################################################
+# Generate checksums
+##############################################################################
+
+echo "==> Generating checksums..."
+
+# Generate SHA256 checksum
+SHA256_FILE="${OUTPUT_FILE}.sha256"
+sha256sum "$OUTPUT_FILE" | sed "s|.*/||" > "$SHA256_FILE"
+echo "  - SHA256: $SHA256_FILE"
+
+# Generate SHA512 checksum
+SHA512_FILE="${OUTPUT_FILE}.sha512"
+sha512sum "$OUTPUT_FILE" | sed "s|.*/||" > "$SHA512_FILE"
+echo "  - SHA512: $SHA512_FILE"
+
+# Display SHA256 for easy verification
+SHA256=$(cat "$SHA256_FILE" | cut -d' ' -f1)
+echo "  - SHA256 hash: $SHA256"
 
 ##############################################################################
 # Cleanup
@@ -411,7 +463,15 @@ echo "Build completed successfully!"
 echo "========================================"
 echo "Output: $OUTPUT_FILE"
 echo "Size: $ARCHIVE_SIZE"
+echo "SHA256: $SHA256"
 echo ""
-echo "To create a .wsl file:"
-echo "  cd $OUTPUT_DIR"
-echo "  mv cachyos-$ARCH-rootfs.tar.gz cachyos-$ARCH.wsl"
+echo "Checksums saved to:"
+echo "  - $SHA256_FILE"
+echo "  - $SHA512_FILE"
+echo ""
+if [ "$COMPRESSION" = "xz" ]; then
+    echo "The .wsl file is ready for distribution or testing."
+else
+    echo "To create a .wsl file for distribution:"
+    echo "  mv $OUTPUT_FILE ${OUTPUT_FILE%.tar.gz}.wsl"
+fi
