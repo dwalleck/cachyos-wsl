@@ -30,12 +30,19 @@ iptables-nft
 
 # Text Editor
 # Essential for configuration file editing
+vi
 nano
 vim
 
 # Utilities
 # jq: JSON processing (for config validation)
 jq
+wget
+unzip
+libsecret
+openssh
+yay
+less
 
 # Shell: Bash (fallback)
 bash
@@ -83,9 +90,9 @@ powerline-fonts
 
 # Development Tools (optional but useful)
 # Uncomment if you want basic development tools in the base image
-# base-devel
-# git
+base-devel
+git
 
 # Package Management Helpers
 # Uncomment if you want reflector for mirror management
-# reflector
+reflector
