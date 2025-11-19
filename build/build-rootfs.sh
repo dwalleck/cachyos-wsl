@@ -66,6 +66,14 @@ if ! command -v pacman &> /dev/null; then
     exit 1
 fi
 
+# Check for xz if using xz compression
+if [ "$COMPRESSION" = "xz" ]; then
+    if ! command -v xz &> /dev/null; then
+        echo "  - Installing xz for compression..."
+        pacman -Sy --noconfirm xz
+    fi
+fi
+
 ##############################################################################
 # Clean up any existing rootfs
 ##############################################################################
