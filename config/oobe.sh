@@ -22,8 +22,15 @@ DEFAULT_GROUPS="wheel"  # Modern Arch approach - wheel group only
 ##############################################################################
 
 if getent passwd "$DEFAULT_UID" > /dev/null; then
-    echo "User account with UID $DEFAULT_UID already exists."
-    echo "Skipping OOBE setup."
+    existing_user=$(getent passwd "$DEFAULT_UID" | cut -d: -f1)
+    echo ""
+    echo "Default user already exists: $existing_user (UID $DEFAULT_UID)"
+    echo "Skipping user creation."
+    echo ""
+    echo "To create a new user or change the default user, run:"
+    echo "  sudo useradd -m -G wheel <username>"
+    echo "  Then edit /etc/wsl.conf to set [user] default=<username>"
+    echo ""
     exit 0
 fi
 
